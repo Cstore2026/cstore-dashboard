@@ -605,3 +605,6 @@ Object.assign(window, {
   updateStaff,
   visibleOrders
 });
+window.login = login;
+window.logout = logout;
+window.setLang = setLang;
