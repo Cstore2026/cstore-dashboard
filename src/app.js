@@ -1,5 +1,8 @@
 import "./styles.css";
+const SUPABASE_URL = "https://vxqbvtcwxxdkskqqewxi.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
 
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const T={
 ar:{
 loginSub:'Welcome to the C Store Delivery Dashboard',language:'اللغة',login:'دخول',badLogin:'بيانات الدخول غير صحيحة',logout:'خروج',
