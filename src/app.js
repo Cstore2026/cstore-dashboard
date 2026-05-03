@@ -164,6 +164,38 @@ function preparerOptions(branch){return (state.preparers[branch]||[]).map(n=>`<o
 function ridersFor(branch){return state.accounts.filter(a=>a.role==='rider'&&a.branch===branch)}
 function riderName(u){let r=state.accounts.find(a=>a.username===u);return r?r.name:(u||'—')}
 async function login() {
+  const u = $("loginUser").value.trim().toLowerCase();
+  const p = $("loginPass").value.trim();
+
+  const { data, error } = await supabase
+    .from("app_users")
+    .select("*")
+    .eq("username", u)
+    .eq("password", p)
+    .single();
+
+  if (error || !data) {
+    $("loginError").classList.remove("hidden");
+    return;
+  }
+
+  current = {
+    username: data.username,
+    password: data.password,
+    role: data.role,
+    name: data.name,
+    branch: data.branch,
+    manualPoints: data.manual_points || 0,
+  };
+
+  active = "overview";
+
+  $("loginScreen").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  $("loginError").classList.add("hidden");
+
+  render();
+}
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
 
