@@ -29,8 +29,7 @@ mohamed / 1234
 youssef / 1234
 
 
-Live Sync:
-1) Run supabase-live-setup.sql in Supabase SQL Editor.
-2) Redeploy this version.
-3) Open the dashboard on two devices.
-4) Add an order on one device; the other device should update automatically without refresh.
+Auto Sync:
+- This version updates other devices automatically without refresh using polling every 2 seconds.
+- It does not depend on Supabase Realtime settings.
+- Run supabase-auto-sync-setup.sql, then redeploy.

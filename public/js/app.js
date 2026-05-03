@@ -65,7 +65,8 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const cloud = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 let cloudReady = false;
 let lastLocalSaveAt = 0;
-let realtimeChannel = null;
+let lastRemoteUpdatedAt = '';
+let autoSyncTimer = null;
 
 let current=null, active='overview';
 let ccDraftStart=null;
@@ -136,36 +137,57 @@ function save(){
   }
 }
 
-async function loadCloudState(){
-  if(!cloud) return;
+async function loadCloudState(options = {}){
+  if(!cloud) return false;
+
+  const silent = !!options.silent;
 
   try{
     const {data, error} = await cloud
       .from('app_state')
-      .select('data')
+      .select('data, updated_at')
       .eq('id', 1)
       .maybeSingle();
 
     if(error){
       console.error('Supabase load error:', error.message);
-      return;
+      return false;
     }
 
     if(data && data.data){
+      const remoteUpdatedAt = data.updated_at || '';
+
+      // Do not overwrite this device immediately after it saved locally.
+      if(silent && remoteUpdatedAt === lastRemoteUpdatedAt) return false;
+      if(silent && Date.now() - lastLocalSaveAt < 1500) return false;
+
       state = normalizeState(data.data);
       localStorage.cstore_unified_state = JSON.stringify(state);
+      lastRemoteUpdatedAt = remoteUpdatedAt;
+      return true;
     } else {
       state = normalizeState(state);
-      await cloud.from('app_state').upsert({
-        id: 1,
-        data: state,
-        updated_at: new Date().toISOString()
-      });
-    }
+      const {data: inserted, error: insertError} = await cloud
+        .from('app_state')
+        .upsert({
+          id: 1,
+          data: state,
+          updated_at: new Date().toISOString()
+        })
+        .select('updated_at')
+        .maybeSingle();
 
-    cloudReady = true;
+      if(insertError){
+        console.error('Supabase initial save error:', insertError.message);
+        return false;
+      }
+
+      lastRemoteUpdatedAt = inserted?.updated_at || '';
+      return true;
+    }
   }catch(e){
     console.error('Supabase connection error:', e);
+    return false;
   }
 }
 function resetDemo(){if(confirm(lang==='en'?'Reset demo data?':'إعادة بيانات التجربة؟')){state=clone(defaults);save();render()}}
@@ -477,39 +499,15 @@ let data=current&&current.role==='admin'
 :visibleOrders().map(o=>[o.id,o.total,bName(o.branch),o.ccStaff||'',o.ccType||'',o.prepBy||'',riderName(o.rider),statusLabel(o.status),fmt(o.created),mins(o.prepStart,o.prepDone),mins(o.pickedAt,o.deliveredAt),o.note||'',o.prepNote||'']);
 let rows=[headers,...data];let csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');let blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=current&&current.role==='admin'?'cstore-all-times.csv':'cstore-unified-orders.csv';a.click();URL.revokeObjectURL(url)}
 
-function startRealtimeSync(){
-  if(!cloud || realtimeChannel) return;
+function startAutoSync(){
+  if(autoSyncTimer) clearInterval(autoSyncTimer);
 
-  realtimeChannel = cloud
-    .channel('app_state_live_sync')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'app_state',
-        filter: 'id=eq.1'
-      },
-      payload => {
-        const incoming = payload.new && payload.new.data;
-        if(!incoming) return;
-
-        // Avoid re-rendering instantly from this same device's own save.
-        if(Date.now() - lastLocalSaveAt < 1200) return;
-
-        state = normalizeState(incoming);
-        localStorage.cstore_unified_state = JSON.stringify(state);
-
-        if(current){
-          render();
-        } else {
-          setLang(lang);
-        }
-      }
-    )
-    .subscribe(status => {
-      console.log('Supabase realtime status:', status);
-    });
+  autoSyncTimer = setInterval(async ()=>{
+    const changed = await loadCloudState({silent:true});
+    if(changed && current){
+      render();
+    }
+  }, 2000);
 }
 
 window.addEventListener('DOMContentLoaded', async ()=>{
@@ -518,7 +516,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
 
   state = normalizeState(state);
   await loadCloudState();
-  startRealtimeSync();
+  startAutoSync();
 
   save();
   setLang(lang);
