@@ -64,6 +64,8 @@ const SUPABASE_URL = "https://wxltqfomiqfldugpgobu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4bHRxZm9taXFmbGR1Z3Bnb2J1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MDMzNzEsImV4cCI6MjA5MzM3OTM3MX0.UrTxH4QupOC8mW8VwqbBHxzVzS9-W86xaD3xyguIVZw";
 const cloud = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 let cloudReady = false;
+let lastLocalSaveAt = 0;
+let realtimeChannel = null;
 
 let current=null, active='overview';
 let ccDraftStart=null;
@@ -121,6 +123,7 @@ function loadState(){
 }
 function save(){
   localStorage.cstore_unified_state = JSON.stringify(state);
+  lastLocalSaveAt = Date.now();
 
   if(cloud && cloudReady){
     cloud.from('app_state').upsert({
@@ -473,12 +476,49 @@ let data=current&&current.role==='admin'
 ?visibleOrders().map(o=>[o.id,o.total,bName(o.branch),o.ccStaff||'',fmt(ccStartTime(o)),registrationDuration(o),fmt(o.created),fmt(o.prepStart),fmt(o.prepDone),riderName(o.rider),fmt(o.pickedAt),fmt(o.deliveredAt),statusLabel(o.status),totalOrderLabel(o),o.note||'',o.prepNote||'',locationMapUrl(o)||'',locationAccuracyCell(o),locationTimeCell(o),statusLabel(getFinalLocation(o).action||o.status)])
 :visibleOrders().map(o=>[o.id,o.total,bName(o.branch),o.ccStaff||'',o.ccType||'',o.prepBy||'',riderName(o.rider),statusLabel(o.status),fmt(o.created),mins(o.prepStart,o.prepDone),mins(o.pickedAt,o.deliveredAt),o.note||'',o.prepNote||'']);
 let rows=[headers,...data];let csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');let blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=current&&current.role==='admin'?'cstore-all-times.csv':'cstore-unified-orders.csv';a.click();URL.revokeObjectURL(url)}
+
+function startRealtimeSync(){
+  if(!cloud || realtimeChannel) return;
+
+  realtimeChannel = cloud
+    .channel('app_state_live_sync')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'app_state',
+        filter: 'id=eq.1'
+      },
+      payload => {
+        const incoming = payload.new && payload.new.data;
+        if(!incoming) return;
+
+        // Avoid re-rendering instantly from this same device's own save.
+        if(Date.now() - lastLocalSaveAt < 1200) return;
+
+        state = normalizeState(incoming);
+        localStorage.cstore_unified_state = JSON.stringify(state);
+
+        if(current){
+          render();
+        } else {
+          setLang(lang);
+        }
+      }
+    )
+    .subscribe(status => {
+      console.log('Supabase realtime status:', status);
+    });
+}
+
 window.addEventListener('DOMContentLoaded', async ()=>{
   if($('loginUser')) $('loginUser').value='';
   if($('loginPass')) $('loginPass').value='';
 
   state = normalizeState(state);
   await loadCloudState();
+  startRealtimeSync();
 
   save();
   setLang(lang);
