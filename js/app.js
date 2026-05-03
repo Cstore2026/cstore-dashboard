@@ -520,17 +520,25 @@ async function saveAccountPass(i){
   user.password = newPass;
 
   try{
-    save();
+    localStorage.cstore_unified_state = JSON.stringify(state);
 
-    if(typeof cloud !== 'undefined' && cloud){
-      await cloud
-        .from('app_users')
-        .update({
-          password: newPass,
-          raw_data: user,
-          updated_at: new Date().toISOString()
-        })
-        .eq('username', user.username);
+    if(cloud){
+      await cloud.from('app_state').upsert({
+        id: 1,
+        data: state,
+        updated_at: new Date().toISOString()
+      });
+
+      await cloud.from('app_users').upsert({
+        username: user.username,
+        password: newPass,
+        role: user.role,
+        name: user.name || '',
+        branch: user.branch || '',
+        manual_points: Number(user.manualPoints || 0),
+        raw_data: user,
+        updated_at: new Date().toISOString()
+      }, {onConflict:'username'});
     }
 
     alert('تم حفظ الباسورد بنجاح');
