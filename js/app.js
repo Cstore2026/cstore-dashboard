@@ -507,7 +507,6 @@ function accountsHTML(){
     </div>
   `;
 }
-
 async function saveAccountPass(i){
   let user = state.accounts[i];
   if(!user) return alert('User not found');
@@ -519,16 +518,10 @@ async function saveAccountPass(i){
 
   user.password = newPass;
 
+  localStorage.cstore_unified_state = JSON.stringify(state);
+
   try{
-    localStorage.cstore_unified_state = JSON.stringify(state);
-
     if(cloud){
-      await cloud.from('app_state').upsert({
-        id: 1,
-        data: state,
-        updated_at: new Date().toISOString()
-      });
-
       await cloud.from('app_users').upsert({
         username: user.username,
         password: newPass,
@@ -539,6 +532,12 @@ async function saveAccountPass(i){
         raw_data: user,
         updated_at: new Date().toISOString()
       }, {onConflict:'username'});
+
+      await cloud.from('app_state').upsert({
+        id: 1,
+        data: state,
+        updated_at: new Date().toISOString()
+      });
     }
 
     alert('تم حفظ الباسورد بنجاح');
