@@ -60,6 +60,11 @@ points:{fastMinutes:10,fastPoints:2,normalMinutes:20,normalPoints:1}
 };
 let lang=localStorage.cstore_unified_lang||'ar';
 let state=loadState();
+const SUPABASE_URL = "https://vxqbvtcwxxdkskqqewxi.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4cWJ2dGN3eHhka3NrcXFld3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNjIwMzMsImV4cCI6MjA5MjczODAzM30.pBUpwyLkGjzERqMb8ULsa7MI4dzL15MWIGFmfxg8pRE";
+const cloud = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let cloudReady = false;
+
 let current=null, active='overview';
 let ccDraftStart=null;
 let filters={prepOrder:'',prepDate:'',deliveryOrder:'',deliveryDate:'',completedOrder:'',completedDate:'',completedFrom:'',completedTo:'',overviewFrom:'',overviewTo:'',overviewMonth:''};
@@ -114,7 +119,49 @@ function loadState(){
     return normalizeState(clone(defaults));
   }
 }
-function save(){localStorage.cstore_unified_state=JSON.stringify(state)}
+function save(){
+  localStorage.cstore_unified_state=JSON.stringify(state);
+  if(cloud && cloudReady){
+    cloud.from('app_state').upsert({
+      id: 1,
+      data: state,
+      updated_at: new Date().toISOString()
+    }).then(({error})=>{
+      if(error) console.error('Supabase save error:', error.message);
+    });
+  }
+}
+
+async function loadCloudState(){
+  if(!cloud) return;
+  try{
+    const {data, error} = await cloud
+      .from('app_state')
+      .select('data')
+      .eq('id', 1)
+      .maybeSingle();
+
+    if(error){
+      console.error('Supabase load error:', error.message);
+      return;
+    }
+
+    if(data && data.data){
+      state = normalizeState(data.data);
+      localStorage.cstore_unified_state = JSON.stringify(state);
+    } else {
+      state = normalizeState(state);
+      await cloud.from('app_state').upsert({
+        id: 1,
+        data: state,
+        updated_at: new Date().toISOString()
+      });
+    }
+    cloudReady = true;
+  }catch(e){
+    console.error('Supabase connection error:', e);
+  }
+}
 function resetDemo(){if(confirm(lang==='en'?'Reset demo data?':'إعادة بيانات التجربة؟')){state=clone(defaults);save();render()}}
 function setLang(v){lang=v==='en'?'en':'ar';localStorage.cstore_unified_lang=lang;document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';document.body.style.direction=document.documentElement.dir;['loginLang','topLang'].forEach(id=>{if($(id))$(id).value=lang});document.querySelectorAll('[data-t]').forEach(n=>n.textContent=tr(n.dataset.t));render()}
 function bName(key){let b=BRANCHES.find(x=>x.key===key);return b?(lang==='ar'?b.ar:b.en):key}
@@ -423,10 +470,11 @@ let data=current&&current.role==='admin'
 ?visibleOrders().map(o=>[o.id,o.total,bName(o.branch),o.ccStaff||'',fmt(ccStartTime(o)),registrationDuration(o),fmt(o.created),fmt(o.prepStart),fmt(o.prepDone),riderName(o.rider),fmt(o.pickedAt),fmt(o.deliveredAt),statusLabel(o.status),totalOrderLabel(o),o.note||'',o.prepNote||'',locationMapUrl(o)||'',locationAccuracyCell(o),locationTimeCell(o),statusLabel(getFinalLocation(o).action||o.status)])
 :visibleOrders().map(o=>[o.id,o.total,bName(o.branch),o.ccStaff||'',o.ccType||'',o.prepBy||'',riderName(o.rider),statusLabel(o.status),fmt(o.created),mins(o.prepStart,o.prepDone),mins(o.pickedAt,o.deliveredAt),o.note||'',o.prepNote||'']);
 let rows=[headers,...data];let csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');let blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=current&&current.role==='admin'?'cstore-all-times.csv':'cstore-unified-orders.csv';a.click();URL.revokeObjectURL(url)}
-window.addEventListener('DOMContentLoaded',()=>{
+window.addEventListener('DOMContentLoaded', async ()=>{
   if($('loginUser')) $('loginUser').value='';
   if($('loginPass')) $('loginPass').value='';
   state=normalizeState(state);
+  await loadCloudState();
   save();
   setLang(lang);
 });

@@ -23,3 +23,14 @@ abbas / 1234
 ahmed / 1234
 mohamed / 1234
 youssef / 1234
+
+
+Supabase:
+1) Open Supabase SQL Editor.
+2) Run supabase-setup.sql.
+3) Deploy this project to Vercel.
+4) Data will sync to table: app_state.
+
+Important:
+- This version syncs the full dashboard state as JSON in one Supabase table.
+- For production with real users, use stronger RLS and real auth later.
