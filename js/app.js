@@ -841,54 +841,41 @@ async function loadAccountsFromDb(){
     console.error('loadAccountsFromDb error:', e);
   }
 }
-function startAutoSync(){
-  if(autoSyncTimer) clearInterval(autoSyncTimer);
+async function loadAccountsFromDb(){
+  if(!cloud) return;
 
-  autoSyncTimer = setInterval(async ()=>{
-    const changed = await loadCloudState({silent:true});
-if(changed && current){
-  await loadAccountsFromDb();
-  render();
-}
-  }, 2000);
-}
+  try{
+    const {data, error} = await cloud
+      .from('app_users')
+      .select('*');
 
-window.addEventListener('DOMContentLoaded', async ()=>{
-  if($('loginUser')) $('loginUser').value='';
-  if($('loginPass')) $('loginPass').value='';
+    if(error || !Array.isArray(data)) return;
 
-  state = normalizeState(state);
+    data.forEach(dbUser=>{
+      const i = state.accounts.findIndex(a =>
+        String(a.username || '').toLowerCase() === String(dbUser.username || '').toLowerCase()
+      );
 
-  await loadCloudState();
-
-  if(cloud){
-    try{
-      const {data, error} = await cloud
-        .from('app_users')
-        .select('*');
-
-      if(!error && Array.isArray(data)){
-        data.forEach(dbUser=>{
-          const i = state.accounts.findIndex(a =>
-            String(a.username || '').toLowerCase() === String(dbUser.username || '').toLowerCase()
-          );
-
-          if(i >= 0){
-            state.accounts[i].password = dbUser.password || state.accounts[i].password;
-            state.accounts[i].role = dbUser.role || state.accounts[i].role;
-            state.accounts[i].name = dbUser.name || state.accounts[i].name;
-            state.accounts[i].branch = dbUser.branch || state.accounts[i].branch;
-            state.accounts[i].manualPoints = Number(dbUser.manual_points || state.accounts[i].manualPoints || 0);
-          }
+      if(i >= 0){
+        state.accounts[i].password = dbUser.password || state.accounts[i].password;
+        state.accounts[i].role = dbUser.role || state.accounts[i].role;
+        state.accounts[i].name = dbUser.name || state.accounts[i].name;
+        state.accounts[i].branch = dbUser.branch || state.accounts[i].branch;
+        state.accounts[i].manualPoints = Number(dbUser.manual_points || state.accounts[i].manualPoints || 0);
+      } else {
+        state.accounts.push({
+          username: dbUser.username,
+          password: dbUser.password || '',
+          role: dbUser.role || '',
+          name: dbUser.name || '',
+          branch: dbUser.branch || 'All',
+          manualPoints: Number(dbUser.manual_points || 0)
         });
-
-        localStorage.cstore_unified_state = JSON.stringify(state);
       }
-    }catch(e){
-      console.error(e);
-    }
-  }
+    });
 
-  startAutoSync();
-  setLang(lang);
-});
+    localStorage.cstore_unified_state = JSON.stringify(state);
+  }catch(e){
+    console.error('loadAccountsFromDb error:', e);
+  }
+}
