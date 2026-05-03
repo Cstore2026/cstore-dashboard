@@ -328,7 +328,7 @@ async function render(){
 
   if(!current) return;
 
-  if(active === 'accounts' && typeof loadAccountsFromDb === 'function'){
+  if(active === 'accounts'){
     await loadAccountsFromDb();
   }
 
