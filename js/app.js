@@ -742,9 +742,10 @@ function startAutoSync(){
 
   autoSyncTimer = setInterval(async ()=>{
     const changed = await loadCloudState({silent:true});
-    if(changed && current){
-      render();
-    }
+if(changed && current){
+  await loadAccountsFromDb();
+  render();
+}
   }, 2000);
 }
 
