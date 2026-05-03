@@ -708,10 +708,37 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   if($('loginPass')) $('loginPass').value='';
 
   state = normalizeState(state);
-  await loadCloudState();
-  startAutoSync();
 
-  save();
-  syncStructuredTables();
+  await loadCloudState();
+
+  if(cloud){
+    try{
+      const {data, error} = await cloud
+        .from('app_users')
+        .select('*');
+
+      if(!error && Array.isArray(data)){
+        data.forEach(dbUser=>{
+          const i = state.accounts.findIndex(a =>
+            String(a.username || '').toLowerCase() === String(dbUser.username || '').toLowerCase()
+          );
+
+          if(i >= 0){
+            state.accounts[i].password = dbUser.password || state.accounts[i].password;
+            state.accounts[i].role = dbUser.role || state.accounts[i].role;
+            state.accounts[i].name = dbUser.name || state.accounts[i].name;
+            state.accounts[i].branch = dbUser.branch || state.accounts[i].branch;
+            state.accounts[i].manualPoints = Number(dbUser.manual_points || state.accounts[i].manualPoints || 0);
+          }
+        });
+
+        localStorage.cstore_unified_state = JSON.stringify(state);
+      }
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  startAutoSync();
   setLang(lang);
 });
