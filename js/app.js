@@ -417,6 +417,10 @@ let data=current&&current.role==='admin'
 ?visibleOrders().map(o=>[o.id,o.total,bName(o.branch),o.ccStaff||'',fmt(ccStartTime(o)),registrationDuration(o),fmt(o.created),fmt(o.prepStart),fmt(o.prepDone),riderName(o.rider),fmt(o.pickedAt),fmt(o.deliveredAt),statusLabel(o.status),totalOrderLabel(o),o.note||'',o.prepNote||'',locationMapUrl(o)||'',locationAccuracyCell(o),locationTimeCell(o),statusLabel(getFinalLocation(o).action||o.status)])
 :visibleOrders().map(o=>[o.id,o.total,bName(o.branch),o.ccStaff||'',o.ccType||'',o.prepBy||'',riderName(o.rider),statusLabel(o.status),fmt(o.created),mins(o.prepStart,o.prepDone),mins(o.pickedAt,o.deliveredAt),o.note||'',o.prepNote||'']);
 let rows=[headers,...data];let csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');let blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=current&&current.role==='admin'?'cstore-all-times.csv':'cstore-unified-orders.csv';a.click();URL.revokeObjectURL(url)}
-setLang(lang);
-
-window.addEventListener('DOMContentLoaded',()=>{if($('loginUser'))$('loginUser').value='';if($('loginPass'))$('loginPass').value='';state=normalizeState(state);save();});
+window.addEventListener('DOMContentLoaded',()=>{
+  if($('loginUser')) $('loginUser').value='';
+  if($('loginPass')) $('loginPass').value='';
+  state=normalizeState(state);
+  save();
+  setLang(lang);
+});

@@ -1,25 +1,17 @@
-C Store Delivery Dashboard - Vite
+C Store Delivery Dashboard - Vite Fixed Login
 
-تشغيل محلي:
-1) npm install
-2) npm run dev
+ملاحظات:
+- تم إصلاح تحميل اللغة بعد فتح الصفحة.
+- يوزر admin يعمل بكلمة مرور 1234.
+- لو المتصفح حافظ بيانات قديمة، افتح الموقع من Incognito أو اعمل Clear site data.
 
-رفع على Vercel:
+Vercel:
 Framework Preset: Vite
 Install Command: npm install
 Build Command: npm run build
 Output Directory: dist
 
-الملفات:
-- index.html
-- css/style.css
-- js/app.js
-- assets/logo.png
-- package.json
-- vite.config.js
-- vercel.json
-
-يوزرات التجربة:
+Demo users:
 admin / 1234
 ccadmin / 1234
 callcenter / 1234
