@@ -453,9 +453,42 @@ function staffManageEditTable(){let rows=[];Object.keys(state.ccStaff).forEach(t
 function preparerEditTable(){let rows=[];Object.keys(state.preparers).forEach(b=>(state.preparers[b]||[]).forEach((n,i)=>{let id=safeKey(b+'_'+i);rows.push(`<tr><td><input id="prepName_${id}" value="${n}"></td><td><select id="prepBranch_${id}">${BRANCHES.map(x=>`<option value="${x.key}" ${b===x.key?'selected':''}>${bName(x.key)}</option>`).join('')}</select></td><td><div class="row"><button class="blue" onclick="updatePreparer('${b}',${i},'${id}')">${tr('save')}</button><button class="red" onclick="deletePreparer('${b}',${i})">${tr('delete')}</button></div></td></tr>`)}));return `<div class="table-wrap"><table style="min-width:650px"><thead><tr><th>${tr('preparer')}</th><th>${tr('branch')}</th><th>${tr('actions')}</th></tr></thead><tbody>${rows.join('')||`<tr><td colspan="3">${tr('noData')}</td></tr>`}</tbody></table></div>`}
 function safeKey(v){return String(v).replace(/[^a-zA-Z0-9_]/g,'_')}
 
-function accountsHTML(){return `<div class="card"><h3>${tr('accounts')}</h3>
-<div class="grid g5"><label>${tr('username')}<input id="accUser"></label><label>${tr('password')}<input id="accPass" value="1234"></label><label>${tr('name')}<input id="accName"></label><label>${tr('role')}<select id="accRole"><option value="admin">Admin</option><option value="ccadmin">Call Center Admin</option><option value="callcenter">Call Center</option><option value="branch">Branch</option><option value="rider">Rider</option></select></label><label>${tr('branch')}<select id="accBranch">${branchOptions(true)}</select></label></div><button class="pink" onclick="addAccount()">${tr('add')}</button><hr>
-<div class="table-wrap"><table><thead><tr><th>${tr('username')}</th><th>${tr('password')}</th><th>${tr('name')}</th><th>${tr('role')}</th><th>${tr('branch')}</th><th>${tr('actions')}</th></tr></thead><tbody>${state.accounts.map((a,i)=>`<tr><td><input id="editAccUser_${i}" value="${a.username}" ${a.username==='admin'?'disabled':''}></td><td><input id="editAccPass_${i}" value="${a.password}"></td><td><input id="editAccName_${i}" value="${a.name}"></td><td><select id="editAccRole_${i}" ${a.username==='admin'?'disabled':''}><option value="admin" ${a.role==='admin'?'selected':''}>Admin</option><option value="ccadmin" ${a.role==='ccadmin'?'selected':''}>Call Center Admin</option><option value="callcenter" ${a.role==='callcenter'?'selected':''}>Call Center</option><option value="branch" ${a.role==='branch'?'selected':''}>Branch</option><option value="rider" ${a.role==='rider'?'selected':''}>Rider</option></select></td><td><select id="editAccBranch_${i}">${branchOptions(true).replace(`value="${a.branch}"`,`value="${a.branch}" selected`)}</select></td><td><div class="row"><button class="blue" onclick="updateAccount(${i})">${tr('save')}</button>${a.username==='admin'?'':`<button class="red" onclick="deleteAccount(${i})">${tr('delete')}</button>`}</div></td></tr>`).join('')}</tbody></table></div></div>`}
+function accountsHTML(){
+  let rows = state.accounts.map((u,i)=>`
+    <tr>
+      <td>${u.username}</td>
+      <td>${u.name || '-'}</td>
+      <td>${u.role}</td>
+      <td>${u.branch || '-'}</td>
+      <td>
+        <input id="pass_${i}" value="${u.password || ''}" style="min-width:120px">
+      </td>
+      <td>
+        <button class="blue" onclick="saveAccountPass(${i})">حفظ</button>
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="card">
+      <h3>${tr('accounts')}</h3>
+      <p class="muted">تعديل باسوردات اليوزرات</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>الاسم</th>
+            <th>Role</th>
+            <th>Branch</th>
+            <th>Password</th>
+            <th>حفظ</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
 function settingsHTML(){return `<div class="card"><h3>${tr('settings')}</h3><div class="grid g4"><label>${lang==='ar'?'دقائق التوصيل السريع':'Fast delivery minutes'}<input id="fastMin" type="number" value="${state.points.fastMinutes}"></label><label>${lang==='ar'?'نقاط التوصيل السريع':'Fast delivery points'}<input id="fastPts" type="number" value="${state.points.fastPoints}"></label><label>${lang==='ar'?'دقائق التوصيل العادي':'Normal delivery minutes'}<input id="normalMin" type="number" value="${state.points.normalMinutes}"></label><label>${lang==='ar'?'نقاط التوصيل العادي':'Normal delivery points'}<input id="normalPts" type="number" value="${state.points.normalPoints}"></label></div><button class="pink" onclick="saveSettings()">${tr('save')}</button><p class="note">${tr('localOnly')}</p></div>`}
 function attachAfterRender(){if($('newCcType')){updateCcStaffSelect();checkCcSendReady()}}
 function updateCcStaffSelect(){let type=$('newCcType').value;$('newCcStaff').innerHTML=ccStaffOptions(type)}
