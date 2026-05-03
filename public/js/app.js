@@ -60,8 +60,8 @@ points:{fastMinutes:10,fastPoints:2,normalMinutes:20,normalPoints:1}
 };
 let lang=localStorage.cstore_unified_lang||'ar';
 let state=loadState();
-const SUPABASE_URL = "https://vxqbvtcwxxdkskqqewxi.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4cWJ2dGN3eHhka3NrcXFld3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNjIwMzMsImV4cCI6MjA5MjczODAzM30.pBUpwyLkGjzERqMb8ULsa7MI4dzL15MWIGFmfxg8pRE";
+const SUPABASE_URL = "https://wxltqfomiqfldugpgobu.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4bHRxZm9taXFmbGR1Z3Bnb2J1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MDMzNzEsImV4cCI6MjA5MzM3OTM3MX0.UrTxH4QupOC8mW8VwqbBHxzVzS9-W86xaD3xyguIVZw";
 const cloud = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 let cloudReady = false;
 
@@ -119,116 +119,52 @@ function loadState(){
     return normalizeState(clone(defaults));
   }
 }
-function orderToDbRow(o){
-  return {
-    order_no: String(o.id || ''),
-    total: Number(o.total || 0),
-    branch: o.branch || '',
-    status: o.status || '',
-    cc_type: o.ccType || '',
-    cc_staff: o.ccStaff || '',
-    note: o.note || '',
-    prep_by: o.prepBy || '',
-    prep_note: o.prepNote || '',
-    rider: o.rider || '',
-    created_at_ms: Number(o.created || Date.now()),
-    prep_start_ms: o.prepStart ? Number(o.prepStart) : null,
-    prep_done_ms: o.prepDone ? Number(o.prepDone) : null,
-    assigned_at_ms: o.assignedAt ? Number(o.assignedAt) : null,
-    picked_at_ms: o.pickedAt ? Number(o.pickedAt) : null,
-    delivered_at_ms: o.deliveredAt ? Number(o.deliveredAt) : null,
-    cancelled_at_ms: o.cancelledAt ? Number(o.cancelledAt) : null,
-    raw_data: o,
-    updated_at: new Date().toISOString()
-  };
-}
+function save(){
+  localStorage.cstore_unified_state = JSON.stringify(state);
 
-function dbRowToOrder(r){
-  if(r.raw_data && typeof r.raw_data === 'object'){
-    return normalizeOrder({...r.raw_data});
+  if(cloud && cloudReady){
+    cloud.from('app_state').upsert({
+      id: 1,
+      data: state,
+      updated_at: new Date().toISOString()
+    }).then(({error})=>{
+      if(error) console.error('Supabase save error:', error.message);
+    });
   }
-  return normalizeOrder({
-    id: String(r.order_no || ''),
-    total: Number(r.total || 0),
-    branch: r.branch || '',
-    status: r.status || 'waiting',
-    ccType: r.cc_type || '',
-    ccStaff: r.cc_staff || '',
-    note: r.note || '',
-    prepBy: r.prep_by || '',
-    prepNote: r.prep_note || '',
-    rider: r.rider || '',
-    created: Number(r.created_at_ms || Date.now()),
-    prepStart: r.prep_start_ms ? Number(r.prep_start_ms) : null,
-    prepDone: r.prep_done_ms ? Number(r.prep_done_ms) : null,
-    assignedAt: r.assigned_at_ms ? Number(r.assigned_at_ms) : null,
-    pickedAt: r.picked_at_ms ? Number(r.picked_at_ms) : null,
-    deliveredAt: r.delivered_at_ms ? Number(r.delivered_at_ms) : null,
-    cancelledAt: r.cancelled_at_ms ? Number(r.cancelled_at_ms) : null
-  });
 }
 
-function normalizeOrder(o){
-  o.id = String(o.id || '');
-  o.total = Number(o.total || 0);
-  o.branch = o.branch || '';
-  o.status = o.status || 'waiting';
-  o.ccType = o.ccType || '';
-  o.ccStaff = o.ccStaff || '';
-  o.note = o.note || '';
-  o.prepBy = o.prepBy || '';
-  o.prepNote = o.prepNote || '';
-  o.rider = o.rider || '';
-  o.created = Number(o.created || Date.now());
-  ['prepStart','prepDone','assignedAt','pickedAt','deliveredAt','cancelledAt'].forEach(k=>{
-    o[k] = o[k] ? Number(o[k]) : null;
-  });
-  return o;
-}
-
-async function syncOrdersToSupabase(){
-  if(!cloud || !cloudReady || !Array.isArray(state.orders)) return;
-  const rows = state.orders.filter(o=>o && o.id).map(orderToDbRow);
-  if(!rows.length) return;
-
-  const {error} = await cloud
-    .from('orders')
-    .upsert(rows, {onConflict: 'order_no'});
-
-  if(error) console.error('Supabase orders save error:', error.message);
-}
-
-async function loadOrdersFromSupabase(){
+async function loadCloudState(){
   if(!cloud) return;
+
   try{
     const {data, error} = await cloud
-      .from('orders')
-      .select('*')
-      .order('created_at_ms', {ascending:false});
+      .from('app_state')
+      .select('data')
+      .eq('id', 1)
+      .maybeSingle();
 
     if(error){
-      console.error('Supabase orders load error:', error.message);
+      console.error('Supabase load error:', error.message);
       return;
     }
 
-    if(Array.isArray(data) && data.length){
-      state.orders = data.map(dbRowToOrder).sort((a,b)=>(b.created||0)-(a.created||0));
+    if(data && data.data){
+      state = normalizeState(data.data);
+      localStorage.cstore_unified_state = JSON.stringify(state);
     } else {
-      await syncOrdersToSupabase();
+      state = normalizeState(state);
+      await cloud.from('app_state').upsert({
+        id: 1,
+        data: state,
+        updated_at: new Date().toISOString()
+      });
     }
 
-    localStorage.cstore_unified_state = JSON.stringify(state);
     cloudReady = true;
   }catch(e){
-    console.error('Supabase orders connection error:', e);
+    console.error('Supabase connection error:', e);
   }
 }
-
-function save(){
-  localStorage.cstore_unified_state=JSON.stringify(state);
-  syncOrdersToSupabase();
-}
-
 function resetDemo(){if(confirm(lang==='en'?'Reset demo data?':'إعادة بيانات التجربة؟')){state=clone(defaults);save();render()}}
 function setLang(v){lang=v==='en'?'en':'ar';localStorage.cstore_unified_lang=lang;document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';document.body.style.direction=document.documentElement.dir;['loginLang','topLang'].forEach(id=>{if($(id))$(id).value=lang});document.querySelectorAll('[data-t]').forEach(n=>n.textContent=tr(n.dataset.t));render()}
 function bName(key){let b=BRANCHES.find(x=>x.key===key);return b?(lang==='ar'?b.ar:b.en):key}
@@ -540,8 +476,10 @@ let rows=[headers,...data];let csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"
 window.addEventListener('DOMContentLoaded', async ()=>{
   if($('loginUser')) $('loginUser').value='';
   if($('loginPass')) $('loginPass').value='';
-  state=normalizeState(state);
-  cloudReady = true;
-  await loadOrdersFromSupabase();
+
+  state = normalizeState(state);
+  await loadCloudState();
+
+  save();
   setLang(lang);
 });
