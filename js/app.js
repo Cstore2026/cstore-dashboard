@@ -699,7 +699,44 @@ async function syncStructuredTables(){
     console.error('Structured database sync error:', e);
   }
 }
+async function loadAccountsFromDb(){
+  if(!cloud) return;
 
+  try{
+    const {data, error} = await cloud
+      .from('app_users')
+      .select('*');
+
+    if(error || !Array.isArray(data)) return;
+
+    data.forEach(dbUser=>{
+      const i = state.accounts.findIndex(a =>
+        String(a.username || '').toLowerCase() === String(dbUser.username || '').toLowerCase()
+      );
+
+      if(i >= 0){
+        state.accounts[i].password = dbUser.password || state.accounts[i].password;
+        state.accounts[i].role = dbUser.role || state.accounts[i].role;
+        state.accounts[i].name = dbUser.name || state.accounts[i].name;
+        state.accounts[i].branch = dbUser.branch || state.accounts[i].branch;
+        state.accounts[i].manualPoints = Number(dbUser.manual_points || state.accounts[i].manualPoints || 0);
+      } else {
+        state.accounts.push({
+          username: dbUser.username,
+          password: dbUser.password || '',
+          role: dbUser.role || '',
+          name: dbUser.name || '',
+          branch: dbUser.branch || 'All',
+          manualPoints: Number(dbUser.manual_points || 0)
+        });
+      }
+    });
+
+    localStorage.cstore_unified_state = JSON.stringify(state);
+  }catch(e){
+    console.error('loadAccountsFromDb error:', e);
+  }
+}
 function startAutoSync(){
   if(autoSyncTimer) clearInterval(autoSyncTimer);
 
