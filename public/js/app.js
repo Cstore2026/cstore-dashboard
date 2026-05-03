@@ -133,7 +133,7 @@ function save(){
       updated_at: new Date().toISOString()
     }).then(({error})=>{
       if(error) console.error('Supabase save error:', error.message);
-      else cloudReady = true;
+      else { cloudReady = true; syncStructuredTables(); }
     });
   }
 }
@@ -502,6 +502,113 @@ let data=current&&current.role==='admin'
 :visibleOrders().map(o=>[o.id,o.total,bName(o.branch),o.ccStaff||'',o.ccType||'',o.prepBy||'',riderName(o.rider),statusLabel(o.status),fmt(o.created),mins(o.prepStart,o.prepDone),mins(o.pickedAt,o.deliveredAt),o.note||'',o.prepNote||'']);
 let rows=[headers,...data];let csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');let blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=current&&current.role==='admin'?'cstore-all-times.csv':'cstore-unified-orders.csv';a.click();URL.revokeObjectURL(url)}
 
+
+function safeDbId(v){
+  return String(v || '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^\w\u0600-\u06FF-]/g, '_')
+    .slice(0, 120);
+}
+
+async function syncStructuredTables(){
+  if(!cloud || !state) return;
+
+  try{
+    const accountsRows = (state.accounts || []).map(a => ({
+      username: String(a.username || ''),
+      password: String(a.password || ''),
+      role: String(a.role || ''),
+      name: String(a.name || ''),
+      branch: String(a.branch || ''),
+      manual_points: Number(a.manualPoints || 0),
+      raw_data: a,
+      updated_at: new Date().toISOString()
+    })).filter(a => a.username);
+
+    const branchRows = (typeof BRANCHES !== 'undefined' ? BRANCHES : []).map(b => ({
+      branch_key: String(b.key || ''),
+      name_ar: String(b.ar || ''),
+      name_en: String(b.en || ''),
+      raw_data: b,
+      updated_at: new Date().toISOString()
+    })).filter(b => b.branch_key);
+
+    const ccRows = [];
+    Object.keys(state.ccStaff || {}).forEach(type => {
+      (state.ccStaff[type] || []).forEach((name, index) => {
+        ccRows.push({
+          id: `${safeDbId(type)}_${index}_${safeDbId(name)}`,
+          staff_type: String(type || ''),
+          staff_name: String(name || ''),
+          raw_data: {type, name, index},
+          updated_at: new Date().toISOString()
+        });
+      });
+    });
+
+    const preparerRows = [];
+    Object.keys(state.preparers || {}).forEach(branch => {
+      (state.preparers[branch] || []).forEach((name, index) => {
+        preparerRows.push({
+          id: `${safeDbId(branch)}_${index}_${safeDbId(name)}`,
+          branch: String(branch || ''),
+          preparer_name: String(name || ''),
+          raw_data: {branch, name, index},
+          updated_at: new Date().toISOString()
+        });
+      });
+    });
+
+    const pointRows = [{
+      id: 1,
+      fast_minutes: Number(state.points?.fastMinutes || 0),
+      fast_points: Number(state.points?.fastPoints || 0),
+      normal_minutes: Number(state.points?.normalMinutes || 0),
+      normal_points: Number(state.points?.normalPoints || 0),
+      raw_data: state.points || {},
+      updated_at: new Date().toISOString()
+    }];
+
+    const orderRows = (state.orders || []).map(o => ({
+      order_no: String(o.id || ''),
+      total: Number(o.total || 0),
+      branch: String(o.branch || ''),
+      status: String(o.status || ''),
+      cc_type: String(o.ccType || ''),
+      cc_staff: String(o.ccStaff || ''),
+      note: String(o.note || ''),
+      prep_by: String(o.prepBy || ''),
+      prep_note: String(o.prepNote || ''),
+      rider: String(o.rider || ''),
+      created_at_ms: o.created ? Number(o.created) : null,
+      prep_start_ms: o.prepStart ? Number(o.prepStart) : null,
+      prep_done_ms: o.prepDone ? Number(o.prepDone) : null,
+      assigned_at_ms: o.assignedAt ? Number(o.assignedAt) : null,
+      picked_at_ms: o.pickedAt ? Number(o.pickedAt) : null,
+      delivered_at_ms: o.deliveredAt ? Number(o.deliveredAt) : null,
+      cancelled_at_ms: o.cancelledAt ? Number(o.cancelledAt) : null,
+      raw_data: o,
+      updated_at: new Date().toISOString()
+    })).filter(o => o.order_no);
+
+    const jobs = [];
+    if(accountsRows.length) jobs.push(cloud.from('app_users').upsert(accountsRows, {onConflict:'username'}));
+    if(branchRows.length) jobs.push(cloud.from('branches').upsert(branchRows, {onConflict:'branch_key'}));
+    if(ccRows.length) jobs.push(cloud.from('cc_staff').upsert(ccRows, {onConflict:'id'}));
+    if(preparerRows.length) jobs.push(cloud.from('preparers').upsert(preparerRows, {onConflict:'id'}));
+    if(pointRows.length) jobs.push(cloud.from('point_settings').upsert(pointRows, {onConflict:'id'}));
+    if(orderRows.length) jobs.push(cloud.from('orders').upsert(orderRows, {onConflict:'order_no'}));
+
+    const results = await Promise.all(jobs);
+    results.forEach(r => {
+      if(r && r.error) console.error('Structured table sync error:', r.error.message);
+    });
+  }catch(e){
+    console.error('Structured database sync error:', e);
+  }
+}
+
 function startAutoSync(){
   if(autoSyncTimer) clearInterval(autoSyncTimer);
 
@@ -522,5 +629,6 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   startAutoSync();
 
   save();
+  syncStructuredTables();
   setLang(lang);
 });

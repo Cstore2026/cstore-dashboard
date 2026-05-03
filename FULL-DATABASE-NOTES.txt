@@ -1,0 +1,18 @@
+Full Database Sync Version
+
+ما الذي تفعله هذه النسخة؟
+- app_state يفضل هو مصدر تشغيل الداش والـ Auto Sync.
+- في نفس الوقت يتم نسخ كل البيانات في جداول منفصلة:
+  app_users
+  branches
+  cc_staff
+  preparers
+  point_settings
+  orders
+
+الخطوات:
+1) شغّل supabase-full-database-setup.sql في Supabase SQL Editor.
+2) ارفع النسخة على GitHub.
+3) Vercel يعمل Deploy.
+4) افتح الداش واعمل أي تعديل أو أضف أوردر.
+5) افتح Supabase Table Editor وشوف الجداول.
