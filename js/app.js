@@ -582,12 +582,11 @@ async function saveAccountPass(i){
   if(!newPass) return alert('اكتب الباسورد');
 
   user.password = newPass;
-
   localStorage.cstore_unified_state = JSON.stringify(state);
 
   try{
     if(cloud){
-      await cloud.from('app_users').upsert({
+      const {error} = await cloud.from('app_users').upsert({
         username: user.username,
         password: newPass,
         role: user.role,
@@ -598,14 +597,14 @@ async function saveAccountPass(i){
         updated_at: new Date().toISOString()
       }, {onConflict:'username'});
 
-      await cloud.from('app_state').upsert({
-        id: 1,
-        data: state,
-        updated_at: new Date().toISOString()
-      });
+      if(error){
+        console.error(error);
+        alert('Supabase Error: ' + error.message);
+        return;
+      }
     }
 
-    alert('تم حفظ الباسورد بنجاح');
+    alert('تم حفظ الباسورد في app_users بنجاح');
   }catch(e){
     console.error(e);
     alert('حصل خطأ أثناء الحفظ');
