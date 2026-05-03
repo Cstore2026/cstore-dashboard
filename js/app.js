@@ -143,7 +143,7 @@ function save(){
       updated_at: new Date().toISOString()
     }).then(({error})=>{
       if(error) console.error('Supabase save error:', error.message);
-      else { cloudReady = true; syncStructuredTables(); }
+     else { cloudReady = true; }
     });
   }
 }
