@@ -323,7 +323,48 @@ function tabsFor(){if(!current)return[];if(current.role==='admin')return ['overv
 function setTab(t){active=t;render()}
 function tabTitle(t){return tr(t)}
 function renderTabs(){let tabs=tabsFor();if(!tabs.includes(active))active=tabs[0];if(current&&current.role==='rider'){$('tabs').innerHTML='';return;}$('tabs').innerHTML=tabs.map(t=>`<button class="tab ${active===t?'active':''}" onclick="setTab('${t}')">${tabTitle(t)}</button>`).join('')}
-function render(){setLangOnly(); if(!current)return; $('userTitle').textContent=current.name||current.username||'';if($('mainBrandTitle')) $('mainBrandTitle').textContent='C Store Delivery Dashboard';renderTabs();let map={overview:overviewHTML,orders:ordersHTML,riderOrders:riderOriginalHTML,callcenter:callCenterHTML,ccadmin:ccAdminHTML,ccAdd:ccAddHTML,ccManage:ccManageHTML,ccReport:ccReportHTML,branchPrep:branchPrepHTML,branchNewOrders:branchNewOrdersHTML,branchAssignRider:branchAssignRiderHTML,delivery:deliveryHTML,prepAdmin:adminPrepHTML,deliveryAdmin:adminDeliveryHTML,completedOrders:completedOrdersHTML,people:addPeopleHTML,accounts:accountsHTML,settings:settingsHTML};$('content').innerHTML=(map[active]||overviewHTML)();attachAfterRender()}
+async function render(){
+  setLangOnly();
+
+  if(!current) return;
+
+  if(active === 'accounts' && typeof loadAccountsFromDb === 'function'){
+    await loadAccountsFromDb();
+  }
+
+  $('userTitle').textContent = current.name || current.username || '';
+
+  if($('mainBrandTitle')){
+    $('mainBrandTitle').textContent = 'C Store Delivery Dashboard';
+  }
+
+  renderTabs();
+
+  let map = {
+    overview: overviewHTML,
+    orders: ordersHTML,
+    riderOrders: riderOriginalHTML,
+    callcenter: callCenterHTML,
+    ccadmin: ccAdminHTML,
+    ccAdd: ccAddHTML,
+    ccManage: ccManageHTML,
+    ccReport: ccReportHTML,
+    branchPrep: branchPrepHTML,
+    branchNewOrders: branchNewOrdersHTML,
+    branchAssignRider: branchAssignRiderHTML,
+    delivery: deliveryHTML,
+    prepAdmin: adminPrepHTML,
+    deliveryAdmin: adminDeliveryHTML,
+    completedOrders: completedOrdersHTML,
+    people: addPeopleHTML,
+    accounts: accountsHTML,
+    settings: settingsHTML
+  };
+
+  $('content').innerHTML = (map[active] || overviewHTML)();
+
+  attachAfterRender();
+}
 function setLangOnly(){document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';document.body.style.direction=document.documentElement.dir;['loginLang','topLang'].forEach(id=>{if($(id))$(id).value=lang});document.querySelectorAll('[data-t]').forEach(n=>n.textContent=tr(n.dataset.t))}
 
 function inPeriod(o){
