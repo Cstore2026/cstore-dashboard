@@ -94,14 +94,21 @@ function normalizeState(data){
     points: currentData.points && typeof currentData.points === 'object' ? {...base.points, ...currentData.points} : base.points,
   };
 
-  // Remove old Viewer account completely.
-  merged.accounts = merged.accounts.filter(a => a && a.role !== 'viewer' && String(a.username||'').toLowerCase() !== 'viewer');
+  merged.accounts = merged.accounts.filter(a =>
+    a &&
+    a.role !== 'viewer' &&
+    String(a.username || '').toLowerCase() !== 'viewer'
+  );
 
-  // Force the core accounts to exist and keep their default login data valid.
   base.accounts.forEach(defaultAccount => {
-    const i = merged.accounts.findIndex(a => String(a.username||'').toLowerCase() === defaultAccount.username.toLowerCase());
+    const i = merged.accounts.findIndex(a =>
+      String(a.username || '').toLowerCase() === defaultAccount.username.toLowerCase()
+    );
+
     if(i >= 0){
-      merged.accounts[i] = {...merged.accounts[i], ...defaultAccount};
+      // مهم جدًا:
+      // الافتراضي يتحط الأول، وبعده الداتا المحفوظة عشان الباسورد الجديد مايرجعش 1234
+      merged.accounts[i] = {...defaultAccount, ...merged.accounts[i]};
     } else {
       merged.accounts.push({...defaultAccount});
     }
@@ -109,12 +116,15 @@ function normalizeState(data){
 
   if(!merged.ccStaff.social) merged.ccStaff.social = [];
   if(!merged.ccStaff.agent) merged.ccStaff.agent = [];
+
   Object.keys(base.preparers).forEach(branch => {
-    if(!Array.isArray(merged.preparers[branch])) merged.preparers[branch] = base.preparers[branch].slice();
+    if(!Array.isArray(merged.preparers[branch])){
+      merged.preparers[branch] = base.preparers[branch].slice();
+    }
   });
+
   return merged;
 }
-
 function loadState(){
   try{
     return normalizeState(JSON.parse(localStorage.cstore_unified_state) || clone(defaults));
