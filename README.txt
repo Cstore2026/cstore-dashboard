@@ -1,14 +1,23 @@
-C Store Delivery Dashboard
+C Store Delivery Dashboard - Vite
 
-طريقة التشغيل:
-1) افتح ملف index.html مباشرة في المتصفح.
-2) أو ارفع الفولدر كامل على GitHub / Vercel.
+تشغيل محلي:
+1) npm install
+2) npm run dev
+
+رفع على Vercel:
+Framework Preset: Vite
+Install Command: npm install
+Build Command: npm run build
+Output Directory: dist
 
 الملفات:
 - index.html
 - css/style.css
 - js/app.js
 - assets/logo.png
+- package.json
+- vite.config.js
+- vercel.json
 
 يوزرات التجربة:
 admin / 1234
