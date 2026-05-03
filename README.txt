@@ -34,3 +34,9 @@ Supabase:
 Important:
 - This version syncs the full dashboard state as JSON in one Supabase table.
 - For production with real users, use stronger RLS and real auth later.
+
+
+Orders table version:
+1) In Supabase SQL Editor, run supabase-orders-setup.sql.
+2) Redeploy this project.
+3) New orders will be saved as rows inside public.orders.
