@@ -252,8 +252,73 @@ function branchOptions(all=false){return (all?`<option value="All">${tr('all')}<
 function preparerOptions(branch){return (state.preparers[branch]||[]).map(n=>`<option>${n}</option>`).join('')}
 function ridersFor(branch){return state.accounts.filter(a=>a.role==='rider'&&a.branch===branch)}
 function riderName(u){let r=state.accounts.find(a=>a.username===u);return r?r.name:(u||'—')}
-function login(){state=normalizeState(state);save();let u=cleanLoginValue($('loginUser').value).toLowerCase(),p=cleanLoginValue($('loginPass').value);let a=(state.accounts||[]).find(x=>String(x.username||'').toLowerCase()===u&&String(x.password||'')===p);if(!a){$('loginError').classList.remove('hidden');return}current=a;active='overview';$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');$('loginError').classList.add('hidden');render()}
-function logout(){current=null;$('app').classList.add('hidden');$('loginScreen').classList.remove('hidden');setLang(lang)}
+async function login(){
+  state = normalizeState(state);
+
+  let u = cleanLoginValue($('loginUser').value).toLowerCase();
+  let p = cleanLoginValue($('loginPass').value);
+
+  let a = null;
+
+  // الأول نحاول نقرأ من Supabase app_users
+  if(cloud){
+    try{
+      const {data, error} = await cloud
+        .from('app_users')
+        .select('*')
+        .eq('username', u)
+        .eq('password', p)
+        .maybeSingle();
+
+      if(!error && data){
+        a = {
+          username: data.username,
+          password: data.password,
+          role: data.role,
+          name: data.name,
+          branch: data.branch,
+          manualPoints: Number(data.manual_points || 0)
+        };
+
+        const i = state.accounts.findIndex(x =>
+          String(x.username || '').toLowerCase() === u
+        );
+
+        if(i >= 0){
+          state.accounts[i] = {...state.accounts[i], ...a};
+        }else{
+          state.accounts.push(a);
+        }
+
+        localStorage.cstore_unified_state = JSON.stringify(state);
+      }
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  // fallback لو Supabase وقع
+  if(!a){
+    a = (state.accounts || []).find(x =>
+      String(x.username || '').toLowerCase() === u &&
+      String(x.password || '') === p
+    );
+  }
+
+  if(!a){
+    $('loginError').classList.remove('hidden');
+    return;
+  }
+
+  current = a;
+  active = 'overview';
+
+  $('loginScreen').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('loginError').classList.add('hidden');
+
+  render();
+}
 function tabsFor(){if(!current)return[];if(current.role==='admin')return ['overview','prepAdmin','deliveryAdmin','completedOrders','delivery','people','accounts','settings'];if(current.role==='ccadmin')return ['overview','ccAdd','ccManage','ccReport','completedOrders'];if(current.role==='callcenter')return ['callcenter','completedOrders'];if(current.role==='branch')return ['branchNewOrders','branchAssignRider','completedOrders'];if(current.role==='rider')return ['riderOrders'];return ['overview']}
 function setTab(t){active=t;render()}
 function tabTitle(t){return tr(t)}
