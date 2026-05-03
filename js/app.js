@@ -471,7 +471,12 @@ function accountsHTML(){
       <td>${u.role}</td>
       <td>${u.branch || '-'}</td>
       <td>
-        <input id="pass_${i}" value="${u.password || ''}" style="min-width:120px">
+        <input
+          id="pass_${i}"
+          value="${u.password || ''}"
+          style="min-width:120px"
+          oninput="state.accounts[${i}].password=this.value"
+        >
       </td>
       <td>
         <button class="blue" onclick="saveAccountPass(${i})">حفظ</button>
@@ -483,21 +488,56 @@ function accountsHTML(){
     <div class="card">
       <h3>${tr('accounts')}</h3>
       <p class="muted">تعديل باسوردات اليوزرات</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>الاسم</th>
-            <th>Role</th>
-            <th>Branch</th>
-            <th>Password</th>
-            <th>حفظ</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+
+      <div class="table-wrap">
+        <table style="min-width:750px">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>الاسم</th>
+              <th>Role</th>
+              <th>Branch</th>
+              <th>Password</th>
+              <th>حفظ</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </div>
   `;
+}
+
+async function saveAccountPass(i){
+  let user = state.accounts[i];
+  if(!user) return alert('User not found');
+
+  let input = document.getElementById('pass_' + i);
+  let newPass = input ? input.value.trim() : '';
+
+  if(!newPass) return alert('اكتب الباسورد');
+
+  user.password = newPass;
+
+  try{
+    save();
+
+    if(typeof cloud !== 'undefined' && cloud){
+      await cloud
+        .from('app_users')
+        .update({
+          password: newPass,
+          raw_data: user,
+          updated_at: new Date().toISOString()
+        })
+        .eq('username', user.username);
+    }
+
+    alert('تم حفظ الباسورد بنجاح');
+  }catch(e){
+    console.error(e);
+    alert('حصل خطأ أثناء الحفظ');
+  }
 }
 function settingsHTML(){return `<div class="card"><h3>${tr('settings')}</h3><div class="grid g4"><label>${lang==='ar'?'دقائق التوصيل السريع':'Fast delivery minutes'}<input id="fastMin" type="number" value="${state.points.fastMinutes}"></label><label>${lang==='ar'?'نقاط التوصيل السريع':'Fast delivery points'}<input id="fastPts" type="number" value="${state.points.fastPoints}"></label><label>${lang==='ar'?'دقائق التوصيل العادي':'Normal delivery minutes'}<input id="normalMin" type="number" value="${state.points.normalMinutes}"></label><label>${lang==='ar'?'نقاط التوصيل العادي':'Normal delivery points'}<input id="normalPts" type="number" value="${state.points.normalPoints}"></label></div><button class="pink" onclick="saveSettings()">${tr('save')}</button><p class="note">${tr('localOnly')}</p></div>`}
 function attachAfterRender(){if($('newCcType')){updateCcStaffSelect();checkCcSendReady()}}
