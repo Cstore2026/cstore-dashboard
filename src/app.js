@@ -163,8 +163,27 @@ function branchOptions(all=false){return (all?`<option value="All">${tr('all')}<
 function preparerOptions(branch){return (state.preparers[branch]||[]).map(n=>`<option>${n}</option>`).join('')}
 function ridersFor(branch){return state.accounts.filter(a=>a.role==='rider'&&a.branch===branch)}
 function riderName(u){let r=state.accounts.find(a=>a.username===u);return r?r.name:(u||'—')}
-function login(){state=normalizeState(state);save();let u=$('loginUser').value.trim().toLowerCase(),p=$('loginPass').value.trim();let a=(state.accounts||[]).find(x=>String(x.username||'').toLowerCase()===u&&String(x.password||'')===p);if(!a){$('loginError').classList.remove('hidden');return}current=a;active='overview';$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');$('loginError').classList.add('hidden');render()}
-function logout(){current=null;$('app').classList.add('hidden');$('loginScreen').classList.remove('hidden');setLang(lang)}
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabase
+    .from("app_users")
+    .select("*")
+    .eq("username", username)
+    .eq("password", password)
+    .single();
+
+  if (error || !data) {
+    alert("بيانات الدخول غير صحيحة");
+    return;
+  }
+
+  currentUser = data;
+
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("dashboardPage").style.display = "block";
+}
 function tabsFor(){if(!current)return[];if(current.role==='admin')return ['overview','prepAdmin','deliveryAdmin','completedOrders','delivery','people','accounts','settings'];if(current.role==='ccadmin')return ['overview','ccAdd','ccManage','ccReport','orders'];if(current.role==='callcenter')return ['callcenter','completedOrders'];if(current.role==='branch')return ['branchNewOrders','branchAssignRider','completedOrders'];if(current.role==='rider')return ['riderOrders'];return ['overview']}
 function setTab(t){active=t;render()}
 function tabTitle(t){return tr(t)}
