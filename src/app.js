@@ -1,9 +1,7 @@
-import "./styles.css";
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const SUPABASE_URL = "https://vxqbvtcwxxdkskqqewxi.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4cWJ2dGN3eHhka3NrcXFld3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNjIwMzMsImV4cCI6MjA5MjczODAzM30.pBUpwyLkGjzERqMb8ULsa7MI4dzL15MWIGFmfxg8pRE";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const T={
 ar:{
@@ -175,7 +173,7 @@ async function login(){
   let a = null;
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("app_users")
       .select("*")
       .eq("username", u)
@@ -196,7 +194,7 @@ async function login(){
     console.error("Supabase login error:", error);
   }
 
-  // fallback للنسخة المحلية لو Supabase حصل فيه مشكلة
+  // fallback محلي مؤقت لو Supabase فيه مشكلة
   if (!a) {
     a = (state.accounts || []).find(x =>
       String(x.username || "").toLowerCase() === u &&
@@ -459,21 +457,3 @@ let rows=[headers,...data];let csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"
 setLang(lang);
 
 window.addEventListener('DOMContentLoaded',()=>{if($('loginUser'))$('loginUser').value='';if($('loginPass'))$('loginPass').value='';state=normalizeState(state);save();});
-
-// Safe exports for inline HTML handlers
-const __handlerNames = ["accountsHTML", "addAccount", "addCancelledCcOrder", "addCcOrder", "addPeopleHTML", "addPreparer", "addStaff", "adjustRiderPoints", "adminDeliveryHTML", "adminPrepHTML", "allTimesTable", "assignRiderPrompt", "attachAfterRender", "avgMins", "bName", "badge", "branchAssignRider", "branchAssignRiderHTML", "branchAssignRiderTable", "branchCompletePrep", "branchNewOrdersHTML", "branchNewOrdersTable", "branchOptions", "branchPrepHTML", "branchPrepRateHTML", "branchStartPrep", "calcAllPoints", "calcPoints", "callCenterHTML", "cancelOrder", "ccAddHTML", "ccAdminHTML", "ccManageHTML", "ccOrdersOnly", "ccOverviewHTML", "ccRegText", "ccReportHTML", "ccReportTable", "ccStaffOptions", "ccStartTime", "checkCcSendReady", "clearFilter", "clearOverviewFilters", "clone", "completedFilterControls", "completedOrdersHTML", "dateOnly", "dayValue", "deleteAccount", "deletePreparer", "deleteStaff", "deliver", "deliveryHTML", "donePrep", "dur", "exportCSV", "exportCompletedCSV", "filterControls", "filterOrders", "filterOrdersRange", "finalLocationCell", "fmt", "getFinalLocation", "loadState", "locationAccuracyCell", "locationMapUrl", "locationTimeCell", "login", "logout", "metric", "miniPerf", "mins", "normalizeState", "orderActions", "orderEndTime", "ordersHTML", "ordersTable", "overviewFiltersHTML", "overviewHTML", "performanceCards", "periodOrders", "pickUp", "preparerEditTable", "preparerOptions", "preparersHTML", "refuse", "registrationDuration", "resetCcDraft", "resetDemo", "riderAssignedTime", "riderAvgDelivery", "riderName", "riderOnlyActions", "riderOriginalHTML", "riderOriginalTable", "ridersFor", "ridersTable", "roleName", "safeKey", "save", "saveSettings", "setLang", "settingsHTML", "staffManageEditTable", "staffManageTable", "startCustomerOrder", "startPrep", "statusLabel", "summary", "totalOrderDuration", "totalOrderLabel", "updateAccount", "updateCcStaffSelect", "updateFilter", "updatePrepNoteInput", "updatePreparer", "updateStaff", "visibleOrders"];
-
-for (const name of __handlerNames) {
-  try {
-    const fn = eval(name);
-    if (typeof fn === "function") window[name] = fn;
-  } catch (error) {}
-}
-
-if (typeof window.logout !== "function") {
-  window.logout = function () {
-    current = null;
-    if ($("app")) $("app").classList.add("hidden");
-    if ($("loginScreen")) $("loginScreen").classList.remove("hidden");
-  };
-}
