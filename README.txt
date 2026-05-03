@@ -1,11 +1,11 @@
-C Store Delivery Dashboard - Vite Fixed Login
+C Store Delivery Dashboard - Vite Public Fixed
 
-ملاحظات:
-- تم إصلاح تحميل اللغة بعد فتح الصفحة.
-- يوزر admin يعمل بكلمة مرور 1234.
-- لو المتصفح حافظ بيانات قديمة، افتح الموقع من Incognito أو اعمل Clear site data.
+المشكلة التي تم حلها:
+- Vite أحيانًا لا ينسخ ملف js/app.js إذا كان خارج public، فيظهر التصميم CSS لكن الدخول لا يعمل.
+- تم وضع css/js/assets داخل public لضمان ظهورها بعد Build.
+- تم ترك نسخة خارج public أيضًا حتى يعمل index.html محليًا عند فتحه مباشرة.
 
-Vercel:
+Vercel Settings:
 Framework Preset: Vite
 Install Command: npm install
 Build Command: npm run build
