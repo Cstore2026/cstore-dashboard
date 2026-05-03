@@ -126,13 +126,14 @@ function save(){
   localStorage.cstore_unified_state = JSON.stringify(state);
   lastLocalSaveAt = Date.now();
 
-  if(cloud && cloudReady){
+  if(cloud){
     cloud.from('app_state').upsert({
       id: 1,
       data: state,
       updated_at: new Date().toISOString()
     }).then(({error})=>{
       if(error) console.error('Supabase save error:', error.message);
+      else cloudReady = true;
     });
   }
 }
@@ -164,6 +165,7 @@ async function loadCloudState(options = {}){
       state = normalizeState(data.data);
       localStorage.cstore_unified_state = JSON.stringify(state);
       lastRemoteUpdatedAt = remoteUpdatedAt;
+      cloudReady = true;
       return true;
     } else {
       state = normalizeState(state);
@@ -183,6 +185,7 @@ async function loadCloudState(options = {}){
       }
 
       lastRemoteUpdatedAt = inserted?.updated_at || '';
+      cloudReady = true;
       return true;
     }
   }catch(e){
