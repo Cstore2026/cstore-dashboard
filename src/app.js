@@ -478,133 +478,34 @@ setLang(lang);
 window.addEventListener('DOMContentLoaded',()=>{if($('loginUser'))$('loginUser').value='';if($('loginPass'))$('loginPass').value='';state=normalizeState(state);save();});
 
 // Expose functions for inline HTML event handlers
-Object.assign(window, {
-  accountsHTML,
-  addAccount,
-  addCancelledCcOrder,
-  addCcOrder,
-  addPeopleHTML,
-  addPreparer,
-  addStaff,
-  adjustRiderPoints,
-  adminDeliveryHTML,
-  adminPrepHTML,
-  allTimesTable,
-  assignRiderPrompt,
-  attachAfterRender,
-  avgMins,
-  bName,
-  badge,
-  branchAssignRider,
-  branchAssignRiderHTML,
-  branchAssignRiderTable,
-  branchCompletePrep,
-  branchNewOrdersHTML,
-  branchNewOrdersTable,
-  branchOptions,
-  branchPrepHTML,
-  branchPrepRateHTML,
-  branchStartPrep,
-  calcAllPoints,
-  calcPoints,
-  callCenterHTML,
-  cancelOrder,
-  ccAddHTML,
-  ccAdminHTML,
-  ccManageHTML,
-  ccOrdersOnly,
-  ccOverviewHTML,
-  ccRegText,
-  ccReportHTML,
-  ccReportTable,
-  ccStaffOptions,
-  ccStartTime,
-  checkCcSendReady,
-  clearFilter,
-  clearOverviewFilters,
-  clone,
-  completedFilterControls,
-  completedOrdersHTML,
-  dateOnly,
-  dayValue,
-  deleteAccount,
-  deletePreparer,
-  deleteStaff,
-  deliver,
-  deliveryHTML,
-  donePrep,
-  dur,
-  exportCSV,
-  exportCompletedCSV,
-  filterControls,
-  filterOrders,
-  filterOrdersRange,
-  finalLocationCell,
-  fmt,
-  getFinalLocation,
-  inPeriod,
-  loadState,
-  locationAccuracyCell,
-  locationMapUrl,
-  locationTimeCell,
-  login,
-  logout,
-  metric,
-  miniPerf,
-  mins,
-  normalizeState,
-  orderActions,
-  orderEndTime,
-  ordersHTML,
-  ordersTable,
-  overviewFiltersHTML,
-  overviewHTML,
-  performanceCards,
-  periodOrders,
-  pickUp,
-  preparerEditTable,
-  preparerOptions,
-  preparersHTML,
-  refuse,
-  registrationDuration,
-  render,
-  renderTabs,
-  resetCcDraft,
-  resetDemo,
-  riderAssignedTime,
-  riderAvgDelivery,
-  riderName,
-  riderOnlyActions,
-  riderOriginalHTML,
-  riderOriginalTable,
-  ridersFor,
-  ridersTable,
-  roleName,
-  safeKey,
-  save,
-  saveSettings,
-  setLang,
-  setLangOnly,
-  setTab,
-  settingsHTML,
-  staffManageEditTable,
-  staffManageTable,
-  startCustomerOrder,
-  startPrep,
-  statusLabel,
-  summary,
-  tabTitle,
-  tabsFor,
-  totalOrderDuration,
-  totalOrderLabel,
-  updateAccount,
-  updateCcStaffSelect,
-  updateFilter,
-  updatePrepNoteInput,
-  updatePreparer,
-  updateStaff,
-  visibleOrders
+
 });
-window.login = login;
-window.logout = logout;
-window.setLang = setLang;
+function exposeInlineHandlers() {
+  const attrs = ["onclick", "onchange", "oninput"];
+
+  document.querySelectorAll("[onclick], [onchange], [oninput]").forEach((element) => {
+    attrs.forEach((attr) => {
+      const code = element.getAttribute(attr) || "";
+      const matches = code.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g);
+
+      for (const match of matches) {
+        const name = match[1];
+
+        try {
+          const fn = eval(name);
+          if (typeof fn === "function") {
+            window[name] = fn;
+          }
+        } catch (error) {}
+      }
+    });
+  });
+
+  if (!window.logout) {
+    window.logout = function () {
+      location.reload();
+    };
+  }
+}
+
+exposeInlineHandlers();
