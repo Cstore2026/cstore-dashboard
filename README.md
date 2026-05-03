@@ -1,16 +1,3 @@
-C Store Delivery Dashboard - Vite Project Fixed
+C Store Dashboard Vite Supabase Safe
 
-Structure:
-- index.html
-- src/app.js
-- src/styles.css
-- public/assets/logo.png
-
-Vercel settings:
-Framework Preset: Vite
-Build Command: npm run build
-Output Directory: dist
-Install Command: npm install
-
-Default login:
-admin / 1234
+Login reads from Supabase app_users with local fallback.
