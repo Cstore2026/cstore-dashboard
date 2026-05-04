@@ -592,7 +592,7 @@ function accountsHTML(){
 
   return `
     <div class="card">
-      <h3>${tr('accounts')}</h3>
+      <h3>${tr('accounts')} - TEST 2026</h3>
       <p class="muted">تعديل باسوردات اليوزرات</p>
 
       <div class="table-wrap">
