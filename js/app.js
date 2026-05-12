@@ -32,7 +32,8 @@ const BRANCHES=[
   {key:'Heliopolis',ar:'مصر الجديدة',en:'Heliopolis'},
   {key:'New Cairo1',ar:'التجمع الأول',en:'New Cairo 1'},
   {key:'New Cairo5',ar:'التجمع الخامس',en:'New Cairo 5'},
-  {key:'Abbas',ar:'عباس',en:'Abbas'}
+  {key:'Abbas',ar:'عباس',en:'Abbas'},
+  {key:'Zayed',ar:'زايد',en:'Zayed'}
 ];
 const defaults={
 accounts:[
