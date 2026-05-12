@@ -33,7 +33,10 @@ const BRANCHES=[
   {key:'New Cairo1',ar:'التجمع الأول',en:'New Cairo 1'},
   {key:'New Cairo5',ar:'التجمع الخامس',en:'New Cairo 5'},
   {key:'Abbas',ar:'عباس',en:'Abbas'},
-  {key:'Zayed',ar:'زايد',en:'Zayed'}
+  {key:'Zayed',ar:'زايد',en:'Zayed'},
+  {key:'October',ar:'أكتوبر',en:'October'},
+  {key:'Madinaty',ar:'مدينتي',en:'Madinaty'},
+  {key:'Shorouk',ar:'الشروق',en:'Shorouk'}
 ];
 const defaults={
 accounts:[
