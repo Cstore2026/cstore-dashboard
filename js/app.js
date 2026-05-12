@@ -248,7 +248,42 @@ function locationTimeCell(o){
 function badge(s){return `<span class="badge b-${s}">${statusLabel(s)}</span>`}
 function visibleOrders(){if(!current)return[];if(current.role==='branch')return state.orders.filter(o=>o.branch===current.branch);if(current.role==='rider')return state.orders.filter(o=>o.rider===current.username);return state.orders}
 function ccStaffOptions(type){return (state.ccStaff[type]||[]).map(n=>`<option>${n}</option>`).join('')}
-function branchOptions(all=false){return (all?`<option value="All">${tr('all')}</option>`:'')+BRANCHES.map(b=>`<option value="${b.key}">${bName(b.key)}</option>`).join('')}
+function getAllBranches(){
+  let map = {};
+
+  BRANCHES.forEach(b=>{
+    map[b.key] = {
+      key: b.key,
+      ar: b.ar || b.key,
+      en: b.en || b.key
+    };
+  });
+
+  (state.accounts || []).forEach(a=>{
+    if(a.role === 'branch' && a.branch && a.branch !== 'All'){
+      if(!map[a.branch]){
+        map[a.branch] = {
+          key: a.branch,
+          ar: a.name || a.branch,
+          en: a.branch
+        };
+      }
+    }
+  });
+
+  return Object.values(map);
+}
+
+function branchOptions(all=false){
+  let list = getAllBranches();
+
+  return (all ? `<option value="All">${tr('all')}</option>` : '') +
+    list.map(b=>`
+      <option value="${b.key}">
+        ${lang === 'ar' ? (b.ar || b.key) : (b.en || b.key)}
+      </option>
+    `).join('');
+}
 function preparerOptions(branch){return (state.preparers[branch]||[]).map(n=>`<option>${n}</option>`).join('')}
 function ridersFor(branch){return state.accounts.filter(a=>a.role==='rider'&&a.branch===branch)}
 function riderName(u){let r=state.accounts.find(a=>a.username===u);return r?r.name:(u||'—')}
