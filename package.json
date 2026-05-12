@@ -1,13 +1,10 @@
 {
-  "name": "cstore-delivery-dashboard",
-  "version": "1.0.0",
-  "private": true,
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "start": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
-  "devDependencies": {
-    "vite": "^5.4.0"
+  "dependencies": {
+    "vite": "latest"
   }
 }
