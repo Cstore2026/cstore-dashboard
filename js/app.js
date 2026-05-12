@@ -205,7 +205,36 @@ async function loadCloudState(options = {}){
 }
 function resetDemo(){if(confirm(lang==='en'?'Reset demo data?':'إعادة بيانات التجربة؟')){state=clone(defaults);save();render()}}
 function setLang(v){lang=v==='en'?'en':'ar';localStorage.cstore_unified_lang=lang;document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';document.body.style.direction=document.documentElement.dir;['loginLang','topLang'].forEach(id=>{if($(id))$(id).value=lang});document.querySelectorAll('[data-t]').forEach(n=>n.textContent=tr(n.dataset.t));render()}
-function bName(key){let b=BRANCHES.find(x=>x.key===key);return b?(lang==='ar'?b.ar:b.en):key}
+function getAllBranches(){
+  let map = {};
+
+  BRANCHES.forEach(b=>{
+    map[b.key] = {
+      key: b.key,
+      ar: b.ar || b.key,
+      en: b.en || b.key
+    };
+  });
+
+  (state.accounts || []).forEach(a=>{
+    if(a.role === 'branch' && a.branch && a.branch !== 'All'){
+      if(!map[a.branch]){
+        map[a.branch] = {
+          key: a.branch,
+          ar: a.name || a.branch,
+          en: a.branch
+        };
+      }
+    }
+  });
+
+  return Object.values(map);
+}
+
+function bName(key){
+  let b = getAllBranches().find(x=>x.key === key);
+  return b ? (lang === 'ar' ? (b.ar || b.key) : (b.en || b.key)) : key;
+}
 function roleName(r){return ({admin:'Admin',ccadmin:'Call Center Admin',callcenter:'Call Center',branch:'Branch',rider:'Rider'})[r]||r}
 function fmt(v){if(!v)return '—';return new Date(v).toLocaleString(lang==='ar'?'ar-EG':'en-GB',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})}
 function dateOnly(v){if(!v)return '—';return new Date(v).toLocaleDateString(lang==='ar'?'ar-EG':'en-GB')}
